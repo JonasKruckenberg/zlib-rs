@@ -1210,11 +1210,8 @@ impl<'a> State<'a> {
     }
 
     const fn d_code(dist: usize) -> u8 {
-        if dist < 256 {
-            self::trees_tbl::DIST_CODE[dist]
-        } else {
-            self::trees_tbl::DIST_CODE[256 + (dist >> 7)]
-        }
+        let index = if dist < 256 { dist } else { 256 + (dist >> 7) };
+        self::trees_tbl::DIST_CODE[index]
     }
 
     pub(crate) fn emit_dist(
@@ -1232,8 +1229,9 @@ impl<'a> State<'a> {
         assert!(c < L_CODES, "bad l_code");
         // send_code_trace(s, c);
 
-        let mut match_bits = ltree[c].code() as usize;
-        let mut match_bits_len = ltree[c].len() as usize;
+        let lnode = ltree[c];
+        let mut match_bits = lnode.code() as usize;
+        let mut match_bits_len = lnode.len() as usize;
         let mut extra = StaticTreeDesc::EXTRA_LBITS[code] as usize;
         if extra != 0 {
             lc -= self::trees_tbl::BASE_LENGTH[code] as usize;
@@ -1247,8 +1245,9 @@ impl<'a> State<'a> {
         // send_code_trace(s, code);
 
         /* Send the distance code */
-        match_bits |= (dtree[code].code() as usize) << match_bits_len;
-        match_bits_len += dtree[code].len() as usize;
+        let dnode = dtree[code];
+        match_bits |= (dnode.code() as usize) << match_bits_len;
+        match_bits_len += dnode.len() as usize;
         extra = StaticTreeDesc::EXTRA_DBITS[code] as usize;
         if extra != 0 {
             dist -= self::trees_tbl::BASE_DIST[code] as usize;
